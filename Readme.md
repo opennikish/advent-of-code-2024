@@ -4,7 +4,7 @@ Solutions for the advent of code challenge
 https://adventofcode.com
 
 - [x] Day 1 `**`
-- [ ] Day 2
+- [x] Day 2 `**`
 - [ ] Day 3
 - [ ] Day 4
 - [ ] Day 5
@@ -28,3 +28,10 @@ https://adventofcode.com
 - [ ] Day 23
 - [ ] Day 24
 - [ ] Day 25
+
+### Run tests
+
+Since we don't have go modules here we can run the tests like this:
+```
+ go test 1.go 1_test.go
+```
