@@ -17,10 +17,29 @@ func solve(path string) int {
 	bs = bytes.TrimSpace(bs)
 	labMap := bytes.Split(bs, []byte{'\n'})
 
-	i, j := findGuardPos(labMap)
+	row, col := findGuardPos(labMap)
 	d, dirs := 0, [][]int{{-1, 0}, {0, 1}, {1, 0}, {0, -1}}
-	loopCache := map[string]bool{}
 
+	fillRoute(labMap, row, col, dirs, d)
+
+	count := 0
+	for i := 0; i < len(labMap); i++ {
+		for j := 0; j < len(labMap[0]); j++ {
+			if labMap[i][j] == 'X' {
+				labMap[i][j] = '#'
+				if hasLoop(labMap, row, col, dirs, d) {
+					count++
+				}
+				labMap[i][j] = 'X'
+			}
+		}
+	}
+
+	return count
+}
+
+func fillRoute(labMap [][]byte, row, col int, dirs [][]int, d int) {
+	i, j := row, col
 	for i >= 0 && i < len(labMap) && j >= 0 && j < len(labMap[0]) {
 		if labMap[i][j] == '#' {
 			// step back
@@ -32,59 +51,29 @@ func solve(path string) int {
 			continue
 		}
 
-		if hasLoop(labMap, i, j, dirs, d, loopCache) {
-			// loopPos[i*len(labMap[0])+j] = true
-			// loopCache[fmt.Sprintf("%d_%d", i, j)] = true
+		if labMap[i][j] != '^' {
+			labMap[i][j] = 'X'
 		}
 
 		i += dirs[d][0]
 		j += dirs[d][1]
 	}
-
-	return len(loopCache)
 }
 
-func hasLoop(labMap [][]byte, row, col int, dirs [][]int, startDir int, loopCache map[string]bool) bool {
-	type rotate struct {
+func hasLoop(labMap [][]byte, row, col int, dirs [][]int, startDir int) bool {
+	type rotation struct {
 		i, j int
 		d    int
 	}
 
-	seen := map[rotate]bool{}
-
+	seen := map[rotation]bool{}
 	i, j := row, col
-
-	ii, jj := i+dirs[startDir][0], j+dirs[startDir][1]
-	if ii < 0 || ii >= len(labMap) || jj < 0 || jj >= len(labMap[0]) || labMap[ii][jj] == '#' || labMap[ii][jj] == '^' {
-		return false
-	}
-
-	labMap[ii][jj] = '#'
-	defer func() {
-		labMap[ii][jj] = '.'
-	}()
-
 	d := startDir
-	// moved := false
-	// steps := 0
+
 	for i >= 0 && i < len(labMap) && j >= 0 && j < len(labMap[0]) {
-		// if steps > len(labMap)*len(labMap[0]) {
-		// if steps > 1000000 {
-		// 	// panic(fmt.Sprintf("endless %d,%d", ii, jj))
-		// 	fmt.Printf("endless %d,%d\n", ii, jj)
-		// 	return true
-		// }
-		// steps++
-
-		// if moved && i == row && j == col && d == startDir {
-		// 	return true
-		// }
-		// moved = true
-
 		if labMap[i][j] == '#' {
-			r := rotate{i: i, j: j, d: d}
+			r := rotation{i: i, j: j, d: d}
 			if seen[r] {
-				loopCache[fmt.Sprintf("%d_%d", ii, jj)] = true
 				return true
 			}
 			seen[r] = true
