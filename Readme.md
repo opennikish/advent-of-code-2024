@@ -1,6 +1,6 @@
 ### Advent Of Code 2024 &#x1F384;
 
-Solutions for the advent of code challenge
+Solutions for the advent of code 2024 challenge
 https://adventofcode.com
 
 - [x] Day 1 `**`
@@ -13,7 +13,7 @@ https://adventofcode.com
 - [x] Day 8 `**`
 - [x] Day 9 `**`
 - [x] Day 10 `**`
-- [ ] Day 11
+- [x] Day 11 `**`
 - [ ] Day 12
 - [ ] Day 13
 - [ ] Day 14
