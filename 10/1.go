@@ -24,45 +24,50 @@ func solve(path string) int {
 
 	total := 0
 	for _, coord := range trailheads {
-		seen := map[Coord]bool{}
-		total += countScore(trailmap, seen, coord.i, coord.j, '0'-1)
+		total += countScore(trailmap, coord)
 	}
 
 	return total
 }
 
-func countScore(trailmap [][]byte, seen map[Coord]bool, row, col int, prev byte) int {
+func countScore(trailmap [][]byte, pos Coord) int {
+	type Item struct {
+		prev byte
+		pos  Coord
+	}
 	n, m := len(trailmap), len(trailmap[0])
 
-	if row < 0 || row >= n || col < 0 || col >= m {
-		return 0
-	}
+	q := []Item{{prev: '0' - 1, pos: pos}}
+	seen := map[Coord]bool{}
+	endCount := 0
 
-	height := trailmap[row][col]
+	for len(q) > 0 {
+		item := q[0]
+		q = q[1:]
+		i, j := item.pos.i, item.pos.j
 
-	if height == 'X' || height-1 != prev {
-		return 0
-	}
-
-	if height == '9' {
-		c := Coord{row, col}
-		if seen[c] {
-			return 0
+		if i < 0 || i >= n || j < 0 || j >= m {
+			continue
 		}
-		seen[c] = true
-		return 1
+
+		height := trailmap[i][j]
+		if seen[item.pos] || height-1 != item.prev {
+			continue
+		}
+		seen[item.pos] = true
+
+		if height == '9' {
+			endCount++
+		}
+
+		q = append(q, Item{prev: height, pos: Coord{i, j + 1}},
+			Item{prev: height, pos: Coord{i + 1, j}},
+			Item{prev: height, pos: Coord{i, j - 1}},
+			Item{prev: height, pos: Coord{i - 1, j}},
+		)
 	}
 
-	trailmap[row][col] = 'X'
-
-	count := countScore(trailmap, seen, row, col+1, height) +
-		countScore(trailmap, seen, row+1, col, height) +
-		countScore(trailmap, seen, row, col-1, height) +
-		countScore(trailmap, seen, row-1, col, height)
-
-	trailmap[row][col] = height
-
-	return count
+	return endCount
 }
 
 func collectTrailHeads(trailmap [][]byte) []Coord {
