@@ -29,9 +29,25 @@ https://adventofcode.com
 - [ ] Day 24
 - [ ] Day 25
 
+### Setup
+
+```
+export GO111MODULE=off
+```
+
+If outside of `$GOPATH/src`:
+```
+ln -s ~/projects/adventofcode2024 ~/go/src/adventofcode2024
+```
+
 ### Run tests
 
 Since we don't have go modules here we can run the tests like this:
 ```
  go test 1.go 1_test.go
 ```
+
+### Notes
+
+Each solution is a self-contained program, so duplication between them is fine.
+Only one small exception (as an experiment) is a lib package with a few functions.
