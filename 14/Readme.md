@@ -3,7 +3,9 @@ Run:
 go run 2.go 2> log
 ```
 
-At the current moment, clearscreen works fine if the opened terminal window is capable of showing 103 rows (as shown in the dump below).
+Use space to pause. If paused, use right/left arrow to go to the next/prev step.
+
+Use the spacebar to pause. If paused, use the right/left arrow keys to go to the next/previous step.
 
 ```
 --- SEC: ???? ---
