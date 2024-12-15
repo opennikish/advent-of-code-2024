@@ -47,6 +47,7 @@ func (c Command) String() string {
 type robot struct {
 	x, y       int
 	movX, movY int
+	char       byte
 }
 
 type point struct {
@@ -57,15 +58,19 @@ type App struct {
 	width     int
 	height    int
 	robots    []*robot
-	roboCache map[point]struct{}
+	roboCache map[point]*robot
 	counter   int
+	paused    bool
+	dir       int
 }
 
 func NewApp(width, height int) *App {
 	return &App{
 		width:     width,
 		height:    height,
-		roboCache: map[point]struct{}{},
+		roboCache: map[point]*robot{},
+		paused:    false,
+		dir:       1,
 	}
 }
 
@@ -76,35 +81,45 @@ func (a *App) Start(ctx context.Context) {
 	a.parseRobots(input)
 
 	cmds, errc := a.runCMDReader(ctx)
-	ticks := time.Tick(1000 * time.Millisecond)
-	paused := false
+	ticks := time.Tick(200 * time.Millisecond)
+
+	gotArrowOnPause := false
 
 	for {
 		select {
 		case cmd := <-cmds:
 			log("cmd: %s", cmd)
 
-			if cmd == Quit {
+			switch cmd {
+			case Quit:
 				fmt.Println("Bye")
 				return
-			}
-
-			if cmd == Pause {
-				paused = paused != true
+			case Pause:
+				a.paused = a.paused != true
+				a.dir = 1
+				gotArrowOnPause = false
+			case Prev:
+				gotArrowOnPause = true
+				a.dir = -1
+			case Next:
+				gotArrowOnPause = true
+				a.dir = 1
 			}
 
 		case <-ticks:
 			log("tick")
 
-			if paused {
+			if a.paused && !gotArrowOnPause {
 				continue
 			}
 
 			clearScreen()
 
-			a.counter++
+			a.counter += a.dir
 			a.move()
 			a.render()
+
+			gotArrowOnPause = false
 
 		case <-ctx.Done():
 			fmt.Println("Bye")
@@ -118,6 +133,7 @@ func (a *App) Start(ctx context.Context) {
 
 func (a *App) move() {
 	transform := func(x, move, limit int) int {
+		move *= a.dir
 		steps := abs(move) % limit
 		if move > 0 {
 			return (x + steps) % limit
@@ -139,15 +155,15 @@ func (a *App) move() {
 func (a *App) render() {
 	clear(a.roboCache)
 	for _, r := range a.robots {
-		a.roboCache[point{x: r.x, y: r.y}] = struct{}{}
+		a.roboCache[point{x: r.x, y: r.y}] = r
 	}
 
 	fmt.Printf("--- SEC: %d ---\n\n", a.counter)
 
 	for i := range a.height {
 		for j := range a.width {
-			if _, ok := a.roboCache[point{y: i, x: j}]; ok {
-				fmt.Print("#")
+			if r, ok := a.roboCache[point{y: i, x: j}]; ok {
+				fmt.Print(string(r.char))
 			} else {
 				fmt.Print(".")
 			}
@@ -159,18 +175,34 @@ func (a *App) render() {
 func (a *App) parseRobots(input []byte) {
 	lines := strings.Split(strings.TrimSpace(string(input)), "\n")
 	robots := make([]*robot, len(lines))
+
+	char := byte(33)
+	nextChar := func() byte {
+		char++
+		if char == 46 { // skip dot
+			char++
+		}
+		if char == 127 { // DEL, reset
+			char = 33
+		}
+		return char
+	}
+
 	for i, l := range lines {
 		nums := rNums.FindAllString(l, -1)
 		if len(nums) != 4 {
 			panic("corrupted robot: " + l)
 		}
+
 		robots[i] = &robot{
 			x:    toInt(nums[0]),
 			y:    toInt(nums[1]),
 			movX: toInt(nums[2]),
 			movY: toInt(nums[3]),
+			char: nextChar(),
 		}
 	}
+
 	a.robots = robots
 }
 
