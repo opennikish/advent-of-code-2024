@@ -14,6 +14,16 @@ import (
 	"time"
 )
 
+func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	app := NewApp(101, 103)
+	app.Start(ctx)
+}
+
+var rNums = regexp.MustCompile(`[\-0-9]+`)
+
 type Command int
 
 const (
@@ -34,8 +44,6 @@ func (c Command) String() string {
 	return cmdNames[c]
 }
 
-var rNums = regexp.MustCompile(`[\-0-9]+`)
-
 type robot struct {
 	x, y       int
 	movX, movY int
@@ -45,29 +53,31 @@ type point struct {
 	x, y int
 }
 
-const width = 101
-const height = 103
+type App struct {
+	width     int
+	height    int
+	robots    []*robot
+	roboCache map[point]struct{}
+	counter   int
+}
 
-func main() {
+func NewApp(width, height int) *App {
+	return &App{
+		width:     width,
+		height:    height,
+		roboCache: map[point]struct{}{},
+	}
+}
+
+func (a *App) Start(ctx context.Context) {
 	input, err := lib.GetInput(14)
 	lib.Check(err)
-	robots := parseRobots(input)
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	a.parseRobots(input)
 
-	cmds, errc := cmdReader(ctx)
-
+	cmds, errc := a.runCMDReader(ctx)
 	ticks := time.Tick(1000 * time.Millisecond)
-
 	paused := false
-	count := 0
-	cache := map[point]struct{}{}
-
-	grid := make([][]byte, height)
-	for i := range grid {
-		grid[i] = make([]byte, width)
-	}
 
 	for {
 		select {
@@ -85,14 +95,16 @@ func main() {
 
 		case <-ticks:
 			log("tick")
+
 			if paused {
 				continue
 			}
+
 			clearScreen()
-			count++
-			move(robots, width, height)
-			cacheRobots(cache, robots)
-			render(cache, grid, count)
+
+			a.counter++
+			a.move()
+			a.render()
 
 		case <-ctx.Done():
 			fmt.Println("Bye")
@@ -104,15 +116,7 @@ func main() {
 	}
 }
 
-func log(format string, a ...any) {
-	if len(a) == 0 {
-		fmt.Fprint(os.Stderr, format+"\n")
-	} else {
-		fmt.Fprintf(os.Stderr, format+"\n", a)
-	}
-}
-
-func move(robots []*robot, width, height int) {
+func (a *App) move() {
 	transform := func(x, move, limit int) int {
 		steps := abs(move) % limit
 		if move > 0 {
@@ -126,25 +130,23 @@ func move(robots []*robot, width, height int) {
 		return x
 	}
 
-	for _, r := range robots {
-		r.x = transform(r.x, r.movX, width)
-		r.y = transform(r.y, r.movY, height)
+	for _, r := range a.robots {
+		r.x = transform(r.x, r.movX, a.width)
+		r.y = transform(r.y, r.movY, a.height)
 	}
 }
 
-func cacheRobots(cache map[point]struct{}, robots []*robot) {
-	clear(cache)
-	for _, r := range robots {
-		cache[point{x: r.x, y: r.y}] = struct{}{}
+func (a *App) render() {
+	clear(a.roboCache)
+	for _, r := range a.robots {
+		a.roboCache[point{x: r.x, y: r.y}] = struct{}{}
 	}
-}
 
-func render(robots map[point]struct{}, grid [][]byte, count int) {
-	fmt.Printf("--- SEC: %d ---\n\n", count)
+	fmt.Printf("--- SEC: %d ---\n\n", a.counter)
 
-	for i := range height {
-		for j := range width {
-			if _, ok := robots[point{y: i, x: j}]; ok {
+	for i := range a.height {
+		for j := range a.width {
+			if _, ok := a.roboCache[point{y: i, x: j}]; ok {
 				fmt.Print("#")
 			} else {
 				fmt.Print(".")
@@ -154,7 +156,25 @@ func render(robots map[point]struct{}, grid [][]byte, count int) {
 	}
 }
 
-func cmdReader(ctx context.Context) (<-chan Command, <-chan error) {
+func (a *App) parseRobots(input []byte) {
+	lines := strings.Split(strings.TrimSpace(string(input)), "\n")
+	robots := make([]*robot, len(lines))
+	for i, l := range lines {
+		nums := rNums.FindAllString(l, -1)
+		if len(nums) != 4 {
+			panic("corrupted robot: " + l)
+		}
+		robots[i] = &robot{
+			x:    toInt(nums[0]),
+			y:    toInt(nums[1]),
+			movX: toInt(nums[2]),
+			movY: toInt(nums[3]),
+		}
+	}
+	a.robots = robots
+}
+
+func (a *App) runCMDReader(ctx context.Context) (<-chan Command, <-chan error) {
 	// disable input buffering
 	err := exec.Command("stty", "-f", "/dev/tty", "cbreak", "min", "1").Run()
 	lib.Check(err)
@@ -201,24 +221,6 @@ func clearScreen() {
 	fmt.Print("\033[H\033[2J")
 }
 
-func parseRobots(input []byte) []*robot {
-	lines := strings.Split(strings.TrimSpace(string(input)), "\n")
-	robots := make([]*robot, len(lines))
-	for i, l := range lines {
-		nums := rNums.FindAllString(l, -1)
-		if len(nums) != 4 {
-			panic("corrupted robot: " + l)
-		}
-		robots[i] = &robot{
-			x:    toInt(nums[0]),
-			y:    toInt(nums[1]),
-			movX: toInt(nums[2]),
-			movY: toInt(nums[3]),
-		}
-	}
-	return robots
-}
-
 func toInt(s string) int {
 	n, err := strconv.Atoi(s)
 	lib.Check(err)
@@ -230,4 +232,12 @@ func abs(x int) int {
 		return -x
 	}
 	return x
+}
+
+func log(format string, a ...any) {
+	if len(a) == 0 {
+		fmt.Fprint(os.Stderr, format+"\n")
+	} else {
+		fmt.Fprintf(os.Stderr, format+"\n", a)
+	}
 }
