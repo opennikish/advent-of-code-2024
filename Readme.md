@@ -3,6 +3,8 @@
 Solutions for the advent of code 2024 challenge
 https://adventofcode.com
 
+Marked with &#x1F384; could be curious for you, have a look!
+
 - [x] Day 1 `**`
 - [x] Day 2 `**`
 - [x] Day 3 `**`
@@ -17,7 +19,7 @@ https://adventofcode.com
 - [x] Day 12 `**`
 - [x] Day 13 `**`
 - [x] Day 14 `*`&#x1F384;
-- [x] Day 15 `**`
+- [x] Day 15 `*`&#x1F384;
 - [ ] Day 16
 - [ ] Day 17
 - [ ] Day 18
