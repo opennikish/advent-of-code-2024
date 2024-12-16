@@ -4,7 +4,9 @@ import (
 	"adventofcode2024/lib"
 	"bytes"
 	"fmt"
+	"os"
 	"slices"
+	"time"
 )
 
 type point struct {
@@ -16,11 +18,16 @@ type boxPos struct {
 }
 
 func main() {
-	input, err := lib.GetInput(15)
+	var input []byte
+	var err error
+	if len(os.Args) > 1 {
+		input, err = os.ReadFile(os.Args[1])
+	} else {
+		input, err = lib.GetInput(15)
+	}
 	lib.Check(err)
-	_ = input
 
-	res := solve(input)
+	res := solve([]byte(input))
 	fmt.Println(res)
 }
 
@@ -143,7 +150,10 @@ func moveBoxes(grid [][]byte, moves []byte) {
 		row += dir
 	}
 
-	for _, m := range moves {
+	render(grid, moves, len(moves))
+	time.Sleep(1 * time.Second)
+
+	for i, m := range moves {
 		switch m {
 		case '^':
 			moveVertically(-1)
@@ -154,10 +164,32 @@ func moveBoxes(grid [][]byte, moves []byte) {
 		case '<':
 			moveHorizontally(-1)
 		}
+
+		render(grid, moves, i)
+		time.Sleep(500 * time.Millisecond)
 	}
 }
 
-func printGrid(grid [][]byte) {
+func render(grid [][]byte, moves []byte, curr int) {
+	fmt.Print("\033[H\033[2J") // clear screen
+	fmt.Println("ROBO WAREHOUSE\n")
+	m := append([]byte(nil), moves...)
+	if curr < len(m) {
+		m = append(m[:curr], append(append([]byte(nil), '|', moves[curr], '|'), m[curr+1:]...)...)
+	}
+
+	i, width, aligned := 0, len(grid[0]), []byte{}
+	for i < len(m) {
+		limit := i + width
+		if limit > len(m) {
+			limit = len(m)
+		}
+		aligned = append(aligned, m[i:limit]...)
+		aligned = append(aligned, '\n')
+		i += width
+	}
+
+	fmt.Println(string(aligned))
 	for i := range grid {
 		fmt.Println(string(grid[i]))
 	}
