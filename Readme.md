@@ -49,6 +49,17 @@ Since we don't have go modules here we can run the tests like this:
  go test 1.go 1_test.go
 ```
 
+
+As part of this AoC, I decided to learn the Delve tool to aid with debugging:
+```
+dlv debug 2.go
+```
+
+Debug test:
+```
+dlv test 2_test.go 2.go -- -test.run 'TestMove$'
+```
+
 ### Notes
 
 Each solution is a self-contained program, so duplication between them is fine.
