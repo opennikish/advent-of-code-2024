@@ -49,7 +49,7 @@ func TestParseInput(t *testing.T) {
 	}
 }
 
-func TestMoveBoxed(t *testing.T) {
+func TestMoveBoxes(t *testing.T) {
 	input := strings.TrimSpace(`
 ########
 #..O.O.#

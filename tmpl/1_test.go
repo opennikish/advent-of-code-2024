@@ -8,7 +8,7 @@ import (
 func TestSolve(t *testing.T) {
 	bs, err := os.ReadFile("test.txt")
 	if err != nil {
-		t.Errorf("read test file", err)
+		t.Errorf("read test file: %w", err)
 	}
 
 	res := solve(bs)
