@@ -20,7 +20,7 @@ Marked with &#x1F384; could be curious for you, have a look!
 - [x] Day 13 `**`
 - [x] Day 14 `*`&#x1F384;
 - [x] Day 15 `*`&#x1F384;
-- [ ] Day 16
+- [x] Day 16 `**`
 - [ ] Day 17
 - [ ] Day 18
 - [ ] Day 19
