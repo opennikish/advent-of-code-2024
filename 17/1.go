@@ -53,7 +53,7 @@ type VM struct {
 // 1 - bxl (xor); B = B xor literal
 // 2 - bst; B = combo % 8;
 // 3 - jnz (jump not zero); if A == 0: do nothing; else: iPointer = literal
-// 4 - bxc; B = B xor C (also, read combo and discard it)
+// 4 - bxc; B = B xor C (operand discarded)
 // 5 - out; print(combo % 8); multiple values should be separated by commas
 // 6 - bdv; B = A / 2 ^ combo;
 // 7 - cdv; C = A / 2 ^ combo;
@@ -63,63 +63,46 @@ func (vm *VM) Run(program string) (string, error) {
 		tokens[i] = t - '0'
 	}
 
+	opCombos := []bool{true, false, true, false, false, true, true, true}
+
 	ip := 0
 	for ip < len(tokens) {
 		opCode := tokens[ip]
 		ip++
 
+		operand := int(tokens[ip])
+		ip++
+		if opCombos[opCode] {
+			var err error
+			operand, err = vm.resolveComboOperand(operand, ip)
+			if err != nil {
+				return "", err
+			}
+		}
+
 		switch opCode {
 		case 0:
-			combo, err := vm.resolveComboOperand(tokens[ip], ip)
-			if err != nil {
-				return "", err
-			}
-			ip++
-			vm.Regs.A /= pow(2, combo)
+			vm.Regs.A /= pow(2, operand)
 		case 1:
-			vm.Regs.B ^= int(tokens[ip])
-			ip++
+			vm.Regs.B ^= operand
 		case 2:
-			combo, err := vm.resolveComboOperand(tokens[ip], ip)
-			if err != nil {
-				return "", err
-			}
-			ip++
-			vm.Regs.B = combo % 8
+			vm.Regs.B = operand % 8
 		case 3:
 			if vm.Regs.A == 0 {
-				ip++
 				continue
 			}
-			literal := int(tokens[ip])
-			if literal%2 != 0 {
+			if operand%2 != 0 {
 				return "", fmt.Errorf("jnz points to operand instead of op code at %d", ip)
 			}
-			ip = literal
+			ip = operand
 		case 4:
 			vm.Regs.B ^= vm.Regs.C
-			ip++
 		case 5:
-			combo, err := vm.resolveComboOperand(tokens[ip], ip)
-			if err != nil {
-				return "", err
-			}
-			ip++
-			vm.print(byte(combo % 8))
+			vm.print(byte(operand % 8))
 		case 6:
-			combo, err := vm.resolveComboOperand(tokens[ip], ip)
-			if err != nil {
-				return "", err
-			}
-			ip++
-			vm.Regs.B = vm.Regs.A / pow(2, combo)
+			vm.Regs.B = vm.Regs.A / pow(2, operand)
 		case 7:
-			combo, err := vm.resolveComboOperand(tokens[ip], ip)
-			if err != nil {
-				return "", err
-			}
-			ip++
-			vm.Regs.C = vm.Regs.A / pow(2, combo)
+			vm.Regs.C = vm.Regs.A / pow(2, operand)
 		default:
 			return "", fmt.Errorf("unexpected op code %d at %d", opCode, ip)
 		}
@@ -128,12 +111,12 @@ func (vm *VM) Run(program string) (string, error) {
 	return string(vm.out), nil
 }
 
-func (vm *VM) resolveComboOperand(oper byte, ip int) (int, error) {
-	if oper < 4 || oper == 7 {
-		return int(oper), nil
+func (vm *VM) resolveComboOperand(operand int, ip int) (int, error) {
+	if operand < 4 {
+		return operand, nil
 	}
 
-	switch oper {
+	switch operand {
 	case 4:
 		return vm.Regs.A, nil
 	case 5:
@@ -142,7 +125,7 @@ func (vm *VM) resolveComboOperand(oper byte, ip int) (int, error) {
 		return vm.Regs.C, nil
 	}
 
-	return 0, fmt.Errorf("unexpected operand %s at %d", string(oper-'0'), ip)
+	return 0, fmt.Errorf("unexpected operand %d at %d", operand, ip)
 }
 
 func (vm *VM) print(num byte) {
