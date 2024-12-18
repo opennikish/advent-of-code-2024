@@ -10,11 +10,11 @@ func TestRunVM(t *testing.T) {
 		regs         Regs
 		expectedRegs *Regs // if nil don't check
 		program      string
-		output       string // if empty don't check
+		output       string
 	}{
 		{
 			regs:         Regs{C: 9},
-			expectedRegs: &Regs{B: 1},
+			expectedRegs: &Regs{B: 1, C: 9},
 			program:      "2,6",
 			output:       "",
 		},
@@ -28,7 +28,7 @@ func TestRunVM(t *testing.T) {
 			regs:         Regs{A: 2024},
 			expectedRegs: &Regs{A: 0},
 			program:      "0,1,5,4,3,0",
-			output:       "4,2,5,6,7,7,7,7,3,1,0 ",
+			output:       "4,2,5,6,7,7,7,7,3,1,0",
 		},
 		{
 			regs:         Regs{B: 29},
@@ -38,7 +38,7 @@ func TestRunVM(t *testing.T) {
 		},
 		{
 			regs:         Regs{B: 2024, C: 43690},
-			expectedRegs: &Regs{B: 44354},
+			expectedRegs: &Regs{B: 44354, C: 43690},
 			program:      "4,0",
 			output:       "",
 		},
@@ -50,16 +50,19 @@ func TestRunVM(t *testing.T) {
 		},
 	}
 
-	for _, c := range cases {
+	for i, c := range cases {
 		vm := &VM{Regs: c.regs}
 
-		out := vm.Run(c.program)
+		out, err := vm.Run(c.program)
+		if err != nil {
+			t.Error(err)
+		}
 		if out != c.output {
-			t.Errorf("expected: %s, got: %s", c.output, out)
+			t.Errorf("case: %d, expected: %s, got: %s", i, c.output, out)
 		}
 		if c.expectedRegs != nil {
 			if vm.Regs != *c.expectedRegs {
-				t.Errorf("expected: %+v, got: %+v", *c.expectedRegs, vm.Regs)
+				t.Errorf("case: %d, expected: %+v, got: %+v", i, *c.expectedRegs, vm.Regs)
 			}
 		}
 	}
