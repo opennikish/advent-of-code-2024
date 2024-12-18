@@ -34,6 +34,7 @@ Marked with &#x1F384; could be curious for you, have a look!
 ### Setup
 
 ```
+export export AOC='<session cookie value>'
 export GO111MODULE=off
 ```
 
