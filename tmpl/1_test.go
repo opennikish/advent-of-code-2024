@@ -1,18 +1,17 @@
 package main
 
 import (
-	"os"
+	"strings"
 	"testing"
 )
 
 func TestSolve(t *testing.T) {
-	bs, err := os.ReadFile("test.txt")
-	if err != nil {
-		t.Errorf("read test file: %w", err)
-	}
-
-	res := solve(bs)
-	if res != 0 {
-		t.Errorf("expected 0, got: %d", res)
+	input := []byte(strings.TrimLeft(`
+	past input	
+	`, "\n"))
+	expected := 0
+	res := solve(input)
+	if res != expected {
+		t.Errorf("expected %d, got %d", expected, res)
 	}
 }
