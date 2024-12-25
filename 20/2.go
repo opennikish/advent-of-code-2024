@@ -17,6 +17,8 @@ func main() {
 const S = -2
 const E = -3
 
+const StepLimit = 20
+
 type point struct {
 	i, j int
 }
@@ -27,18 +29,9 @@ type pointpair struct {
 
 func solve(input []byte, minCheatWin int) int {
 	grid := parseInput(input)
-	start, _ := findCell(grid, S), findCell(grid, E)
+	start := findCell(grid, S)
 	path := traverse(grid, start)
 
-	for i, row := range grid {
-		for _, cell := range row {
-			if cell == 0 {
-				fmt.Println("zero cell", i, cell)
-			}
-		}
-	}
-
-	// used := map[point]bool{}
 	used := map[pointpair]bool{}
 	cheats := 0
 	for _, p := range path {
@@ -52,11 +45,11 @@ func bfs(grid [][]int, used map[pointpair]bool, start point, minCheatWin int) in
 	dirs := []point{{0, 1}, {0, -1}, {1, 0}, {-1, 0}}
 
 	count := 0
-	layers := 0
+	steps := 0
 	seen := map[point]bool{start: true}
 	q := []point{start}
 
-	for len(q) > 0 && layers < 20 {
+	for len(q) > 0 && steps <= StepLimit {
 		n := len(q)
 
 		for _ = range n {
@@ -64,12 +57,11 @@ func bfs(grid [][]int, used map[pointpair]bool, start point, minCheatWin int) in
 			q = q[1:]
 
 			if p != start && grid[p.i][p.j] > 0 {
-				// if abs(grid[p.i][p.j]-grid[start.i][start.j])-layers >= minCheatWin {
-				if grid[p.i][p.j]-grid[start.i][start.j]-layers >= minCheatWin {
-					a, b := pointpair{start, p}, pointpair{p, start}
-					if !used[a] && !used[b] {
-						used[a] = true
-						used[b] = true
+				if grid[p.i][p.j]-grid[start.i][start.j]-steps >= minCheatWin {
+					from, to := pointpair{start, p}, pointpair{p, start}
+					if !used[from] && !used[to] {
+						used[from] = true
+						used[to] = true
 
 						count++
 					}
@@ -86,7 +78,7 @@ func bfs(grid [][]int, used map[pointpair]bool, start point, minCheatWin int) in
 			}
 		}
 
-		layers++
+		steps++
 	}
 
 	return count
